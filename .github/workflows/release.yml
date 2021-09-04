@@ -15,11 +15,8 @@ jobs:
           submodules: true
 
       - run: cmake -B build
-#      - run: sudo apt install libboost-all-dev
-#      - run: cmake .
-#      - run: cmake --build .
-#      - run: cmake --build . --target test
-#      - run: cmake --build . --target package
+      - run: cmake --build build
+      - run: cmake --build build --target test
 
       # - name: Doxygen Action
       #   uses: mattnotmitt/doxygen-action@v1.1.0
@@ -29,16 +26,16 @@ jobs:
       #     # Working directory
       #     working-directory: "." # default is .
 
-      # - name: Create Release
-      #   id: create_release
-      #   uses: actions/create-release@v1
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #   with:
-      #     tag_name: ${{ github.run_number }}
-      #     release_name: Release ${{ github.run_number }}
-      #     draft: false
-      #     prerelease: false
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.run_number }}
+          release_name: Release ${{ github.run_number }}
+          draft: false
+          prerelease: false
 
       # - name: Upload Release Asset
       #   id: upload-release-asset
