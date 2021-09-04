@@ -16,7 +16,7 @@ jobs:
 
       - run: cmake -B build
       - run: cmake --build build
-      # - run: cmake --build build --target test
+      - run: cmake --build build --target package
 
       # - name: Doxygen Action
       #   uses: mattnotmitt/doxygen-action@v1.1.0
