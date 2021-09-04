@@ -9,7 +9,7 @@
 #include <regex>
 
 
-void Deallocator(void* data, size_t length, void* arg) {
+void Deallocator([[maybe_unused]]void* data, [[maybe_unused]]size_t length, [[maybe_unused]]void* arg) {
         std::cout << "Deallocator called\n";
         // free(data);
         // *reinterpret_cast<bool*>(arg) = true;
@@ -21,6 +21,7 @@ using features_data_t = struct {
   int product_type;
   features_t features; 
 };
+//
 using feat_arr_t = std::vector<features_data_t>;
 
 feat_arr_t read_file ();
@@ -57,7 +58,7 @@ int main(int argc, char* argv[]) {
   TF_Buffer* RunOpts = NULL;
   
   // Load saved TensorFlow session
-  fprintf(stdout, "Start load TensorFlow saved model from #s\n", export_dir.c_str());
+  fprintf(stdout, "Start load TensorFlow saved model from %s\n", export_dir.c_str());
 
   // - `export_dir` must be set to the path of the exported SavedModel.
   // - `tags` must include the set of tags used to identify one MetaGraphDef in
@@ -238,7 +239,7 @@ feat_arr_t read_file (/*const std::string &file*/)
 {
   feat_arr_t    feat_arr;
   std::string   line{};
-  float         val;
+  // float         val;
   int           count{0};
 
   const std::regex comma(",");

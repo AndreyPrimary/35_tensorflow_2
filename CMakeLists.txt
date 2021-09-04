@@ -14,6 +14,14 @@ conan_cmake_run(
     missing 
 )
 
+if (MSVC)
+    # warning level 4 and all warnings as errors
+    add_compile_options(/W4 /WX)
+else()
+    # lots of warnings and all warnings as errors
+    add_compile_options(-Wall -Wextra)
+endif()
+
 set(CMAKE_CXX_STANDARD 17)
 
 file(GLOB HRDS
@@ -92,3 +100,4 @@ add_custom_target(${PROJECT_NAME}_test
     $<TARGET_FILE:test_${PROJECT_NAME}>
     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
 )
+
