@@ -47,7 +47,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./ts_checkmodel-Linux.deb
+          asset_path: ./build/ts_checkmodel-Linux.deb
           asset_name: ts_checkmodel-Linux.deb
           asset_content_type: application/vnd.debian.binary-package
 
