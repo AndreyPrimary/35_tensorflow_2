@@ -27,7 +27,7 @@ feat_arr_t read_file ();
 
 int main(int argc, char* argv[]) {
   if (argc < 2) {
-      fprintf(stderr, "Usage: %s modelpath \n", argv[0]);
+      std::cout << "Usage: " << argv[0] <<  " modelpath" << std::endl;
       return 1;
   }    
 
@@ -37,27 +37,13 @@ int main(int argc, char* argv[]) {
 
   auto feat_arr = read_file ();
 
-  // DEBUG >>>
-  // auto features_data = feat_arr.front();
-
-  // std::cout << "product_type : " << features_data.product_type << std::endl;
-
-  // for (const auto val : features_data.features) {
-  //   std::cout << val << " ";
-  // }
-
-  // std::cout << std::endl;
-  // <<< DEBUG
-  
-  
-
   TF_Graph* graph = TF_NewGraph();
   TF_Status* status = TF_NewStatus();
   TF_SessionOptions* session_opts = TF_NewSessionOptions();
   TF_Buffer* RunOpts = NULL;
   
   // Load saved TensorFlow session
-  fprintf(stdout, "Start load TensorFlow saved model from %s\n", export_dir.c_str());
+  std::cout << "Start load TensorFlow saved model from " << export_dir << std::endl;
 
   // - `export_dir` must be set to the path of the exported SavedModel.
   // - `tags` must include the set of tags used to identify one MetaGraphDef in
@@ -71,11 +57,13 @@ int main(int argc, char* argv[]) {
     );
 
   if (TF_GetCode(status) != TF_OK) {
-          fprintf(stderr, "ERROR: Unable to load session from saved model '%s' Error: %s", 
-                export_dir.c_str(), TF_Message(status));        
+          std::cout << "ERROR: Unable to load session from saved model '" << export_dir 
+            << "' Error: " << TF_Message(status) << std::endl;
+
           return 1;
   } 
-  fprintf(stdout, "Successfully load session\n");
+
+  std::cout << "Successfully load session" << std::endl;
 
  // Create variables to store the size of the input and output variables
   const int num_bytes_in = 28 * 28 * sizeof(float);
@@ -113,7 +101,7 @@ int main(int argc, char* argv[]) {
     // (make sure the operation name is correct)
     TF_Operation* input_op = TF_GraphOperationByName(graph, "serving_default_input");
     if (input_op == nullptr) {
-      fprintf(stderr, "Operation 'serving_default_input' not found in graph\n");
+      std::cout << "Operation 'serving_default_input' not found in graph" << std::endl;
       return 1;
     }
     std::cout << "Input op info: " << TF_OperationNumOutputs(input_op) << "\n";
@@ -143,7 +131,7 @@ int main(int argc, char* argv[]) {
     std::vector<TF_Output> outputs;
     TF_Operation* output_op = TF_GraphOperationByName(graph, "StatefulPartitionedCall");
     if (output_op == nullptr) {
-      fprintf(stderr, "Operation 'StatefulPartitionedCall' not found in graph\n");
+      std::cout << "Operation 'StatefulPartitionedCall' not found in graph" << std::endl;
       return 1;
     }
     TF_Output output_opout = {output_op, 0};
@@ -169,7 +157,7 @@ int main(int argc, char* argv[]) {
                   nullptr, 0, nullptr, status);
 
     if (TF_GetCode(status) != TF_OK) {
-            fprintf(stderr, "ERROR: Unable to run session %s", TF_Message(status));        
+            std::cout << "ERROR: Unable to run session " << TF_Message(status) << std::endl;
             return 1;
     }
 
@@ -203,23 +191,18 @@ int main(int argc, char* argv[]) {
     prediction = 0;
   }
 
-  fprintf(stdout, "Successfully run session\n");
+  std::cout << "Successfully run session" << std::endl;
 
-  fprintf(stdout, "*** Prediction %.3f\n", prediction);
-
-  // DEBUG >>>
-  // std::cout << "count_positive : " << count_positive << "\n";
-  // std::cout << "count_negative : " << count_negative << "\n";
-  // <<< DEBUG
+  std::cout << "*** Prediction " << prediction << std::endl;
 
   TF_CloseSession(session, status);
   if (TF_GetCode(status) != TF_OK) {
-          fprintf(stderr, "ERROR: Unable to close session %s", TF_Message(status));        
+          std::cout << "ERROR: Unable to close session " << TF_Message(status) << std::endl;
           return 1;
   }
   TF_DeleteSession(session, status);
   if (TF_GetCode(status) != TF_OK) {
-          fprintf(stderr, "ERROR: Unable to delete session %s", TF_Message(status));        
+          std::cout << "ERROR: Unable to delete session " << TF_Message(status) << std::endl;
           return 1;
   }   
   TF_DeleteSessionOptions(session_opts);                                     
@@ -238,8 +221,6 @@ feat_arr_t read_file (/*const std::string &file*/)
 {
   feat_arr_t    feat_arr;
   std::string   line{};
-  // float         val;
-  int           count{0};
 
   const std::regex comma(",");
   
@@ -248,7 +229,7 @@ feat_arr_t read_file (/*const std::string &file*/)
         throw std::runtime_error{"Input data file test.csv not found"};
   }
 
-  fprintf(stdout, "Start load test.csv\n");
+  std::cout << "Start load test.csv" << std::endl;
 
   while ( getline (test_data,line) ) {
 
@@ -267,14 +248,9 @@ feat_arr_t read_file (/*const std::string &file*/)
                 [](std::string val) { return stof(val) / 255;});
 
         feat_arr.push_back(features_data);
-
-        count++;
-        if (count % 100 == 0) {
-                fprintf(stdout, ".");
-        }
   }
 
-  fprintf(stdout, "\nEnd load\n");
+  std::cout << "End load" << std::endl;
 
   return feat_arr;
 }
