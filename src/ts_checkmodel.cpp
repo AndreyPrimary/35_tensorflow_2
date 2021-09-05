@@ -14,6 +14,75 @@ void Deallocator([[maybe_unused]]void* data, [[maybe_unused]]size_t length, [[ma
         // *reinterpret_cast<bool*>(arg) = true;
 }
 
+class TF_container {
+
+public:  
+  TF_Buffer* RunOpts = nullptr;
+  TF_Status* status = nullptr;
+  TF_Graph* graph = nullptr;
+  TF_SessionOptions* session_opts = nullptr;
+  TF_Session* session = nullptr;
+
+  TF_container() {
+    allocate();
+  }
+
+  ~TF_container() {
+    deallocate();
+  }
+
+  void allocate () {
+    deallocate();
+
+    status = TF_NewStatus();
+    graph = TF_NewGraph();
+    session_opts = TF_NewSessionOptions();
+  }
+
+  void deallocate() {
+    if (session != nullptr) {
+
+      if (status == nullptr) {
+        status = TF_NewStatus();
+      }
+
+      TF_CloseSession(session, status);
+
+      if (TF_GetCode(status) != TF_OK) {
+        std::cout << "ERROR: Unable to close session " << TF_Message(status) << std::endl;
+      }
+
+      TF_DeleteSession(session, status);
+
+      if (TF_GetCode(status) != TF_OK) {
+        std::cout << "ERROR: Unable to delete session " << TF_Message(status) << std::endl;
+      }
+
+      session = nullptr;
+    }
+
+    if (session_opts != nullptr) {
+      TF_DeleteSessionOptions(session_opts);
+      session_opts = nullptr;
+    }
+
+    if (graph != nullptr) {
+      TF_DeleteGraph(graph);
+      graph = nullptr;
+    }
+
+    if (status != nullptr) {
+      TF_DeleteStatus(status);
+      status = nullptr;
+    }
+
+    if (RunOpts != nullptr) {
+      TF_DeleteBuffer(RunOpts);
+      RunOpts = nullptr;
+    }
+  }
+};
+
 using features_t = std::vector<float>;
 using probas_t = std::vector<float>;
 using features_data_t = struct {
@@ -37,10 +106,12 @@ int main(int argc, char* argv[]) {
 
   auto feat_arr = read_file ();
 
-  TF_Graph* graph = TF_NewGraph();
-  TF_Status* status = TF_NewStatus();
-  TF_SessionOptions* session_opts = TF_NewSessionOptions();
-  TF_Buffer* RunOpts = NULL;
+  std::unique_ptr<TF_container> tf_cont(new TF_container);
+
+  // TF_Graph* graph = TF_NewGraph();
+  // TF_Status* status = TF_NewStatus();
+  // TF_SessionOptions* session_opts = TF_NewSessionOptions();
+  // TF_Buffer* RunOpts = NULL;
   
   // Load saved TensorFlow session
   std::cout << "Start load TensorFlow saved model from " << export_dir << std::endl;
@@ -50,15 +121,15 @@ int main(int argc, char* argv[]) {
   //    the SavedModel.
   // - `graph` must be a graph newly allocated with TF_NewGraph().
   TF_Session* session = TF_LoadSessionFromSavedModel(
-    session_opts,       RunOpts, 
-    export_dir.c_str(), &tags, 
-    ntags,              graph, 
-    NULL,               status
+    tf_cont->session_opts,      tf_cont->RunOpts, 
+    export_dir.c_str(),         &tags, 
+    ntags,                      tf_cont->graph, 
+    NULL,                       tf_cont->status
     );
 
-  if (TF_GetCode(status) != TF_OK) {
+  if (TF_GetCode(tf_cont->status) != TF_OK) {
           std::cout << "ERROR: Unable to load session from saved model '" << export_dir 
-            << "' Error: " << TF_Message(status) << std::endl;
+            << "' Error: " << TF_Message(tf_cont->status) << std::endl;
 
           return 1;
   } 
@@ -76,7 +147,7 @@ int main(int argc, char* argv[]) {
 
   size_t pos = 0;
   TF_Operation* oper;
-  while ((oper = TF_GraphNextOperation(graph, &pos)) != nullptr) {
+  while ((oper = TF_GraphNextOperation(tf_cont->graph, &pos)) != nullptr) {
       std::cout << "Input: " << TF_OperationName(oper) << "\n";
   }
 
@@ -99,7 +170,7 @@ int main(int argc, char* argv[]) {
 
     // Pass the graph and a string name of your input operation
     // (make sure the operation name is correct)
-    TF_Operation* input_op = TF_GraphOperationByName(graph, "serving_default_input");
+    TF_Operation* input_op = TF_GraphOperationByName(tf_cont->graph, "serving_default_input");
     if (input_op == nullptr) {
       std::cout << "Operation 'serving_default_input' not found in graph" << std::endl;
       return 1;
@@ -129,7 +200,7 @@ int main(int argc, char* argv[]) {
 
     // Create vector to store graph output operations
     std::vector<TF_Output> outputs;
-    TF_Operation* output_op = TF_GraphOperationByName(graph, "StatefulPartitionedCall");
+    TF_Operation* output_op = TF_GraphOperationByName(tf_cont->graph, "StatefulPartitionedCall");
     if (output_op == nullptr) {
       std::cout << "Operation 'StatefulPartitionedCall' not found in graph" << std::endl;
       return 1;
@@ -150,14 +221,14 @@ int main(int argc, char* argv[]) {
     std::cout << "Output info: " << TF_Dim(output_value, 0) << "\n";
     std::cout << "Output info: " << TF_Dim(output_value, 1) << "\n";
 
-  // Call TF_SessionRun
-    TF_SessionRun(session, nullptr,
+    // Call TF_SessionRun
+    TF_SessionRun(tf_cont->session, nullptr,
                   &inputs[0], &input_values[0], inputs.size(),
                   &outputs[0], &output_values[0], outputs.size(),
-                  nullptr, 0, nullptr, status);
+                  nullptr, 0, nullptr, tf_cont->status);
 
-    if (TF_GetCode(status) != TF_OK) {
-            std::cout << "ERROR: Unable to run session " << TF_Message(status) << std::endl;
+    if (TF_GetCode(tf_cont->status) != TF_OK) {
+            std::cout << "ERROR: Unable to run session " << TF_Message(tf_cont->status) << std::endl;
             return 1;
     }
 
@@ -195,22 +266,22 @@ int main(int argc, char* argv[]) {
 
   std::cout << "*** Prediction " << prediction << std::endl;
 
-  TF_CloseSession(session, status);
-  if (TF_GetCode(status) != TF_OK) {
-          std::cout << "ERROR: Unable to close session " << TF_Message(status) << std::endl;
-          return 1;
-  }
-  TF_DeleteSession(session, status);
-  if (TF_GetCode(status) != TF_OK) {
-          std::cout << "ERROR: Unable to delete session " << TF_Message(status) << std::endl;
-          return 1;
-  }   
-  TF_DeleteSessionOptions(session_opts);                                     
-  TF_DeleteStatus(status);
-  TF_DeleteBuffer(RunOpts);
+  // TF_CloseSession(session, status);
+  // if (TF_GetCode(status) != TF_OK) {
+  //         std::cout << "ERROR: Unable to close session " << TF_Message(status) << std::endl;
+  //         return 1;
+  // }
+  // TF_DeleteSession(session, status);
+  // if (TF_GetCode(status) != TF_OK) {
+  //         std::cout << "ERROR: Unable to delete session " << TF_Message(status) << std::endl;
+  //         return 1;
+  // }   
+  // TF_DeleteSessionOptions(session_opts);                                     
+  // TF_DeleteStatus(status);
+  // TF_DeleteBuffer(RunOpts);
 
-  // Use the graph                                                                        
-  TF_DeleteGraph(graph);
+  // // Use the graph                                                                        
+  // TF_DeleteGraph(graph);
 
   return 0;
 }
