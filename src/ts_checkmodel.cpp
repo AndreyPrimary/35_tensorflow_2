@@ -19,11 +19,16 @@ class TF_container {
 public:  
   TF_Buffer* RunOpts = nullptr;
   TF_Status* status = nullptr;
+  // std::unique_ptr<TF_Status, decltype(&TF_DeleteStatus)> status;
   TF_Graph* graph = nullptr;
   TF_SessionOptions* session_opts = nullptr;
   TF_Session* session = nullptr;
 
-  TF_container() {
+  // std::unique_ptr<TF_container> tf_cont(new TF_container);
+  // using unique_file_t = std::unique_ptr<std::FILE, decltype(&close_file)>;
+  // auto song = make_unique<Song>(L"Mr. Children", L"Namonaki Uta"
+
+  TF_container()/* : status(TF_NewStatus(), TF_DeleteStatus)*/ {
     allocate();
   }
 
@@ -71,10 +76,10 @@ public:
       graph = nullptr;
     }
 
-    if (status != nullptr) {
-      TF_DeleteStatus(status);
-      status = nullptr;
-    }
+    // if (status != nullptr) {
+    //   TF_DeleteStatus(status);
+    //   status = nullptr;
+    // }
 
     if (RunOpts != nullptr) {
       TF_DeleteBuffer(RunOpts);
