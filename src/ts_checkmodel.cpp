@@ -76,10 +76,10 @@ public:
       graph = nullptr;
     }
 
-    // if (status != nullptr) {
-    //   TF_DeleteStatus(status);
-    //   status = nullptr;
-    // }
+    if (status != nullptr) {
+      TF_DeleteStatus(status);
+      status = nullptr;
+    }
 
     if (RunOpts != nullptr) {
       TF_DeleteBuffer(RunOpts);
@@ -97,19 +97,31 @@ using features_data_t = struct {
 //
 using feat_arr_t = std::vector<features_data_t>;
 
-feat_arr_t read_file ();
+feat_arr_t read_file (const std::string &testDataFile);
 
 int main(int argc, char* argv[]) {
-  if (argc < 2) {
-      std::cout << "Usage: " << argv[0] <<  " modelpath" << std::endl;
+  if (argc < 3) {
+      std::cout << "Usage: " << argv[0] <<  " modelpath test_data_file" << std::endl;
       return 1;
   }    
 
   std::string   export_dir      = argv[1];
+  std::string   testDataFile    = argv[2];
   const char*   tags = "serve"; // default model serving tag;
   int ntags = 1;
 
-  auto feat_arr = read_file ();
+  auto feat_arr = read_file (testDataFile);
+
+  // DEBUG >>>
+  // auto feat_data = *feat_arr.begin();
+
+  // std::cout << feat_data.product_type << std::endl;
+
+  // for (const auto val : feat_data.features) {
+  //   std::cout << val << " ";
+  // }
+  // std::cout << std::endl;
+  // <<< DEBUG
 
   std::unique_ptr<TF_container> tf_cont(new TF_container);
 
@@ -125,7 +137,7 @@ int main(int argc, char* argv[]) {
   // - `tags` must include the set of tags used to identify one MetaGraphDef in
   //    the SavedModel.
   // - `graph` must be a graph newly allocated with TF_NewGraph().
-  TF_Session* session = TF_LoadSessionFromSavedModel(
+  tf_cont->session = TF_LoadSessionFromSavedModel(
     tf_cont->session_opts,      tf_cont->RunOpts, 
     export_dir.c_str(),         &tags, 
     ntags,                      tf_cont->graph, 
@@ -166,9 +178,6 @@ int main(int argc, char* argv[]) {
     // Set up graph inputs
     // ######################
 
-    // Create a variable containing your values, in this case the input is a
-    // 3-dimensional float
-    // float values[28*28] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.329412, 0.72549, 0.623529, 0.592157, 0.235294, 0.141176, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.870588, 0.996078, 0.996078, 0.996078, 0.996078, 0.945098, 0.776471, 0.776471, 0.776471, 0.776471, 0.776471, 0.776471, 0.776471, 0.776471, 0.666667, 0.203922, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.262745, 0.447059, 0.282353, 0.447059, 0.639216, 0.890196, 0.996078, 0.882353, 0.996078, 0.996078, 0.996078, 0.980392, 0.898039, 0.996078, 0.996078, 0.54902, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.0666667, 0.258824, 0.054902, 0.262745, 0.262745, 0.262745, 0.231373, 0.0823529, 0.92549, 0.996078, 0.415686, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.32549, 0.992157, 0.819608, 0.0705882, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.0862745, 0.913725, 1, 0.32549, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.505882, 0.996078, 0.933333, 0.172549, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.231373, 0.976471, 0.996078, 0.243137, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.521569, 0.996078, 0.733333, 0.0196078, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.0352941, 0.803922, 0.972549, 0.227451, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.494118, 0.996078, 0.713726, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.294118, 0.984314, 0.941176, 0.223529, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.0745098, 0.866667, 0.996078, 0.65098, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.0117647, 0.796078, 0.996078, 0.858824, 0.137255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.14902, 0.996078, 0.996078, 0.301961, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.121569, 0.878431, 0.996078, 0.45098, 0.00392157, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.521569, 0.996078, 0.996078, 0.203922, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.239216, 0.94902, 0.996078, 0.996078, 0.203922, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.47451, 0.996078, 0.996078, 0.858824, 0.156863, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.47451, 0.996078, 0.811765, 0.0705882, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
     // Create vectors to store graph input operations and input tensors
     std::vector<TF_Output> inputs;
     std::vector<TF_Tensor*> input_values;
@@ -180,21 +189,21 @@ int main(int argc, char* argv[]) {
       std::cout << "Operation 'serving_default_input' not found in graph" << std::endl;
       return 1;
     }
-    std::cout << "Input op info: " << TF_OperationNumOutputs(input_op) << "\n";
+    // std::cout << "Input op info: " << TF_OperationNumOutputs(input_op) << "\n";
 
     TF_Output input_opout = {input_op, 0};
     inputs.push_back(input_opout);
 
     // Create the input tensor using the dimension (in_dims) and size (num_bytes_in)
     // variables created earlier
-    TF_Tensor* input = TF_NewTensor(TF_FLOAT, in_dims, 4, /*values*/features_data.features.data(), num_bytes_in, &Deallocator, 0);
+    TF_Tensor* input = TF_NewTensor(TF_FLOAT, in_dims, 4, features_data.features.data(), num_bytes_in, &Deallocator, 0);
     if (input == nullptr) {
         std::cerr << "Error: TF_NewTensor" << std::endl;
         return 1;
     }
     // Optionally, you can check that your input_op and input tensors are correct
     // by using some of the functions provided by the C API.
-    std::cout << "Input data info: " << TF_Dim(input, 0) << "\n";
+    // std::cout << "Input data info: " << TF_Dim(input, 0) << "\n";
 
     input_values.push_back(input);
 
@@ -242,7 +251,8 @@ int main(int argc, char* argv[]) {
     for (int i = 0; i < 10; ++i)
     {
         probas.push_back(*out_vals);
-        std::cout << "Output values[" << i << "] info: " << *out_vals++ << "\n";
+        // std::cout << "Output values[" << i << "] info: " << *out_vals << "\n";
+        out_vals++;
     }
 
     auto argmax = std::max_element(probas.begin(), probas.end());
@@ -271,42 +281,26 @@ int main(int argc, char* argv[]) {
 
   std::cout << "*** Prediction " << prediction << std::endl;
 
-  // TF_CloseSession(session, status);
-  // if (TF_GetCode(status) != TF_OK) {
-  //         std::cout << "ERROR: Unable to close session " << TF_Message(status) << std::endl;
-  //         return 1;
-  // }
-  // TF_DeleteSession(session, status);
-  // if (TF_GetCode(status) != TF_OK) {
-  //         std::cout << "ERROR: Unable to delete session " << TF_Message(status) << std::endl;
-  //         return 1;
-  // }   
-  // TF_DeleteSessionOptions(session_opts);                                     
-  // TF_DeleteStatus(status);
-  // TF_DeleteBuffer(RunOpts);
-
-  // // Use the graph                                                                        
-  // TF_DeleteGraph(graph);
-
   return 0;
 }
 
 
-feat_arr_t read_file (/*const std::string &file*/) 
-// features_t read_file ()
+feat_arr_t read_file (const std::string &testDataFile)
 {
   feat_arr_t    feat_arr;
   std::string   line{};
 
   const std::regex comma(",");
   
-  std::ifstream test_data{"test.csv"/*file.c_str()*/};
+  // std::ifstream test_data{"test.csv"/*file.c_str()*/};
+  std::ifstream test_data{testDataFile.c_str()};
   if (!test_data.is_open() ) {
-        throw std::runtime_error{"Input data file test.csv not found"};
+    std::string err = "Input data file " + testDataFile + " not found";
+        throw std::runtime_error(err.c_str());
   }
 
   std::cout << "Start load test.csv" << std::endl;
-
+/*
   while ( getline (test_data,line) ) {
 
         std::vector<std::string> row{ std::sregex_token_iterator(line.begin(),line.end(),comma,-1), 
@@ -318,6 +312,32 @@ feat_arr_t read_file (/*const std::string &file*/)
         // first byte - product type
         auto it = row.begin();
         features_data.product_type = stof(*it++);
+
+        // Divide each bytes by 255
+        std::transform(it, row.end(), std::back_inserter(features_data.features),
+                [](std::string val) { return stof(val) / 255;});
+
+        feat_arr.push_back(features_data);
+  }
+*/
+
+  while ( getline (test_data,line) ) {
+
+        std::stringstream s(line);
+
+        std::vector<std::string>  row;
+        std::string               val;
+
+        while (getline(s, val, ',')) {
+          row.push_back(val);
+        }        
+
+        features_data_t    features_data;
+        features_data.features.reserve(row.size());
+
+        // first byte - product type
+        auto it = row.begin();
+        features_data.product_type = stoi(*it++);
 
         // Divide each bytes by 255
         std::transform(it, row.end(), std::back_inserter(features_data.features),
